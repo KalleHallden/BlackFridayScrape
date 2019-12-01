@@ -6,6 +6,11 @@ from selenium import webdriver
 from selenium.webdriver.common.keys import Keys
 from product import Product
 
+try:
+    raw_input  # Python 2
+except NameError:
+    raw_input = input  # Python 3
+
 URL = "http://www.amazon.com/"
   
 options = webdriver.ChromeOptions()
