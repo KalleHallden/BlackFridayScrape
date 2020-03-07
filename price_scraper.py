@@ -1,20 +1,32 @@
-
 import requests 
 import json
 from bs4 import BeautifulSoup
 from selenium import webdriver
 from selenium.webdriver.common.keys import Keys
 from product import Product
+from utils import convert_price_toNumber
+from web_driver_conf import get_web_driver_options
+from web_driver_conf import get_chrome_web_driver
+from web_driver_conf import set_ignore_certificate_error
+from web_driver_conf import set_browser_as_incognito
+from web_driver_conf import set_automation_as_head_less
 
 URL = "http://www.amazon.com/"
-  
-options = webdriver.ChromeOptions()
-options.add_argument('--ignore-certificate-errors')
-options.add_argument('--incognito')
-options.add_argument('--headless')
-driver = webdriver.Chrome("/Users/kalle/Downloads/chromedriver", chrome_options=options)
+NUMBER_OF_PAGES_TO_SEARCH = 5
+QUESTION_PRODUCT = "What are you looking for?\n:"
+search_term = str(input(QUESTION_PRODUCT))
 
-search_term = str(raw_input("What are you looking for?\n:"))
+biggest_discount = 0.0
+lowest_price = 0.0
+chepest_product = Product("", "", "", "")
+best_deal_product = Product("", "", "", "")
+search_terms = search_term.split(" ")
+
+options = get_web_driver_options()
+set_automation_as_head_less(options)
+set_ignore_certificate_error(options)
+set_browser_as_incognito(options)
+driver = get_chrome_web_driver(options)
 
 driver.get(URL)
 element = driver.find_element_by_xpath('//*[@id="twotabsearchtextbox"]')
@@ -23,29 +35,16 @@ element.send_keys(Keys.ENTER)
 
 products = []
 
+page = NUMBER_OF_PAGES_TO_SEARCH
 
-def convert_price_toNumber(price):
-
-    price = price.split("$")[1]
-    try:
-        price = price.split("\n")[0] + "." + price.split("\n")[1]
-    except:
-        Exception()
-    try:
-        price = price.split(",")[0] + price.split(",")[1]
-    except:
-        Exception()
-    return float(price)
-
-page = 1
 while True:
-    if page != 1:
+    if page != 0:
         try:
             driver.get(driver.current_url + "&page=" + str(page))
         except:
             break
-    for i in driver.find_elements_by_xpath('//*[@id="search"]/div[1]/div[2]/div/span[4]/div[1]'):
 
+    for i in driver.find_elements_by_xpath('//*[@id="search"]/div[1]/div[2]/div/span[4]/div[1]'):
         counter = 0
         for element in i.find_elements_by_xpath('//div/div/div[2]/div[2]/div/div[2]/div[1]/div/div[1]/div/div/a'):
             should_add = True
@@ -69,16 +68,10 @@ while True:
             if should_add:
                 products.append(product)
             counter = counter + 1
-    page = page +1
-    if page == 11:
+    page = page - 1
+    if page == 0:
         break
     print(page)
-
-biggest_discount = 0.0
-lowest_price = 0.0
-chepest_product = Product("", "", "", "")
-best_deal_product = Product("", "", "", "")
-search_terms = search_term.split(" ")
 
 run = 0
 
@@ -110,8 +103,8 @@ with open('products.json', 'w') as json_file:
 print(json.dumps(chepest_product.serialize(), indent=4, sort_keys=True))
 print(json.dumps(best_deal_product.serialize(), indent=4, sort_keys=True))
 
-options = webdriver.ChromeOptions()
-options.add_argument('--ignore-certificate-errors')
-driver = webdriver.Chrome("/Users/kalle/Downloads/chromedriver", chrome_options=options)
+options = get_web_driver_options()
+set_ignore_certificate_error(options)
+driver = get_chrome_web_driver(options)
 driver.get(best_deal_product.link)
 driver.find_element_by_tag_name('body').send_keys(Keys.COMMAND + 't')
